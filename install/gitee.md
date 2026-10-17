@@ -1,10 +1,14 @@
 # Gitee 镜像下载
 
-GitHub 在校园网偶尔不稳定，可用 Gitee 镜像。
+GitHub 在校园网偶尔不稳定，可用 Gitee 镜像。GitHub 源仓库：
+
+```
+https://github.com/suoa/medstats-pharm-skills
+```
 
 ## 在线浏览（不用注册）
 
-镜像地址发布后在此填写：
+镜像地址建立后在此填写：
 
 ```
 https://gitee.com/<账号>/medstats-pharm-skills
