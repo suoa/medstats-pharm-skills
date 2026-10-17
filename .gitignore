@@ -1,0 +1,20 @@
+# 凭证与环境
+.env
+*.key
+
+# 学生真实数据（防误提交）
+data_private/
+*.sav
+*.dta
+*.xlsx
+!datasets/**/*.csv
+
+# 系统与软件临时文件
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc
+.Rhistory
+.RData
+.Rproj.user/
+.spv
