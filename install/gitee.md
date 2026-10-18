@@ -1,40 +1,5 @@
-# Gitee 镜像下载
+# Gitee 镜像筹备中
 
-GitHub 在校园网偶尔不稳定，可用 Gitee 镜像。GitHub 源仓库：
+当前尚未发布经核验的Gitee镜像地址，请使用[GitHub源仓库](https://github.com/suoa/medstats-pharm-skills)或教师提供的作业包。不能把占位账号当作可下载地址或可执行克隆命令。
 
-```
-https://github.com/suoa/medstats-pharm-skills
-```
-
-## 在线浏览（不用注册）
-
-镜像地址建立后在此填写：
-
-```
-https://gitee.com/<账号>/medstats-pharm-skills
-```
-
-## 打包下载
-
-仓库页面点「克隆/下载 → 下载 ZIP」，解压后按 [README.md](README.md) 方式 A 使用。
-
-## git 克隆
-
-```bash
-git clone https://gitee.com/<账号>/medstats-pharm-skills.git
-```
-
-## 同步策略（给维护者）
-
-一个仓库两个远端，推送时两边都推：
-
-```bash
-git remote add origin https://github.com/<账号>/medstats-pharm-skills.git
-git remote add gitee https://gitee.com/<账号>/medstats-pharm-skills.git
-git push origin main
-git push gitee main
-```
-
-或在 Gitee 仓库设置中开启「自动同步 GitHub」。
-
-> 注：镜像地址在阿索建好 GitHub/Gitee 仓库后补全。
+镜像建立并验证后，维护者在本页补实际地址、同步基线及核验日期，再更新[安装说明](README.md)。本轮不提供未经核验的镜像下载或自动同步承诺。
