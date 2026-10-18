@@ -240,8 +240,8 @@ class TeachingAnalysisTests(unittest.TestCase):
         paths = list((ROOT / "datasets/teaching").glob("*.csv"))
         before = {path: path.read_bytes() for path in paths}
         with tempfile.TemporaryDirectory() as temp:
-            subprocess.run([sys.executable, str(ROOT / "scripts/analyze_teaching.py"), "--output-dir", temp, "--t-policy", "course"], cwd=ROOT, check=True, capture_output=True, text=True)
-            output = Path(temp)
+            output = Path(temp) / "run"
+            subprocess.run([sys.executable, str(ROOT / "scripts/analyze_teaching.py"), "--output-dir", str(output), "--t-policy", "course"], cwd=ROOT, check=True, capture_output=True, text=True)
             saved = json.loads((output / "results.json").read_text())
             self.assertEqual(saved["metadata"]["execution"]["R"], "not_executed")
             self.assertEqual(saved["metadata"]["execution"]["SPSS"], "not_executed")
@@ -266,6 +266,69 @@ class TeachingAnalysisTests(unittest.TestCase):
                 self.assertAlmostEqual(point.value, np.log(original.loc[key, "cmax_T"]) - np.log(original.loc[key, "cmax_R"]), places=12)
         for path in paths:
             self.assertEqual(path.read_bytes(), before[path])
+
+    def test_cli_requires_new_directory_and_preserves_previous_run(self):
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp) / "course-run"
+            command = [sys.executable, str(ROOT / "scripts/analyze_teaching.py")]
+            subprocess.run(command + ["--output-dir", str(output), "--t-policy", "course"],
+                           cwd=ROOT, check=True, capture_output=True, text=True)
+            self.assertEqual({path.name for path in output.iterdir()},
+                             {"results.json", "summary.csv", "summary.txt", "adverse_events_table.csv",
+                              "diagnostics.png", "diagnostic_points.csv"})
+            saved = json.loads((output / "results.json").read_text())
+            self.assertEqual(saved["tablet_assay"]["policy"], "course")
+            (output / "student_notes.txt").write_text("本轮图形已人工查看。\n", encoding="utf-8")
+            before = {path.name: path.read_bytes() for path in output.iterdir()}
+
+            rerun = subprocess.run(command + ["--output-dir", str(output), "--t-policy", "welch"],
+                                   cwd=ROOT, capture_output=True, text=True)
+            self.assertNotEqual(rerun.returncode, 0)
+            self.assertRegex(rerun.stdout + rerun.stderr, r"新[^\n]*目录")
+            self.assertEqual({path.name: path.read_bytes() for path in output.iterdir()}, before)
+
+            new_output = Path(temp) / "welch-run"
+            subprocess.run(command + ["--output-dir", str(new_output), "--t-policy", "welch"],
+                           cwd=ROOT, check=True, capture_output=True, text=True)
+            new_saved = json.loads((new_output / "results.json").read_text())
+            self.assertEqual(new_saved["tablet_assay"]["policy"], "welch")
+            self.assertEqual(new_saved["tablet_assay"]["primary_method"], "welch")
+            self.assertEqual({path.name: path.read_bytes() for path in output.iterdir()}, before)
+
+            empty_output = Path(temp) / "existing-empty"
+            empty_output.mkdir()
+            rejected = subprocess.run(command + ["--output-dir", str(empty_output)],
+                                      cwd=ROOT, capture_output=True, text=True)
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertRegex(rejected.stdout + rejected.stderr, r"新[^\n]*目录")
+            self.assertEqual(list(empty_output.iterdir()), [])
+
+    def test_cli_rejects_existing_output_symlink_before_writing_any_file(self):
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp) / "inputs"
+            data_dir.mkdir()
+            for name in ("tablet_assay.csv", "bioeq_cmax.csv", "adverse_events.csv"):
+                (data_dir / name).write_bytes((ROOT / "datasets/teaching" / name).read_bytes())
+            before = {path.name: path.read_bytes() for path in data_dir.iterdir()}
+            output = Path(temp) / "existing-output"
+            output.mkdir()
+            link = output / "summary.csv"
+            target = data_dir / "tablet_assay.csv"
+            try:
+                link.symlink_to(target)
+            except (OSError, NotImplementedError) as error:
+                self.skipTest(f"当前平台不支持创建符号链接：{error}")
+            original_target = link.readlink()
+
+            rejected = subprocess.run([sys.executable, str(ROOT / "scripts/analyze_teaching.py"),
+                                       "--data-dir", str(data_dir), "--output-dir", str(output)],
+                                      cwd=ROOT, capture_output=True, text=True)
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertRegex(rejected.stdout + rejected.stderr, r"新[^\n]*目录")
+            self.assertEqual({path.name: path.read_bytes() for path in data_dir.iterdir()}, before)
+            self.assertEqual({path.name for path in output.iterdir()}, {"summary.csv"})
+            self.assertTrue(link.is_symlink())
+            self.assertEqual(link.readlink(), original_target)
 
     def test_qq_points_keep_ids_ties_and_do_not_certify_skewed_data(self):
         sample = diagnostic_sample("skewed", ["z", "a", "b", "c"], [100., 1., 1., 2.], "units")
