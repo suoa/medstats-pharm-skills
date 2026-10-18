@@ -68,7 +68,7 @@ description: t 检验方法 skill（单样本、配对、两独立样本）。�
 
 ## 4. 软件执行（三轨）
 
-单次作业选一轨，保持目标量、方向和算法一致；不同算法不要求数字相同。本次Python教学脚本有实跑验收；R/SPSS仅作官方文档与静态核对，尚未实跑，不宣称三轨验证通过。以下代码是输入已清理的最小模板，完整教学脚本与保存方式见[例题](references/examples.md)。
+单次作业选一轨，保持目标量、方向和算法一致；不同算法不要求数字相同。Python教学脚本已有实跑；基础R数值与下列模板在WebR/R 4.6.0执行过，桌面R与SPSS仍待本机核验，不宣称三轨验证通过。以下代码是输入已清理的最小模板，完整教学脚本与保存方式见[例题](references/examples.md)。
 
 ### 轨 A：SPSS（菜单路径）
 
@@ -81,24 +81,59 @@ description: t 检验方法 skill（单样本、配对、两独立样本）。�
 ### 轨 B：R
 
 ```r
-# Templates: provide cleaned x, mu0, a, b and ID-aligned pre/post first.
-t.test(x, mu = mu0)
-t.test(dat$post, dat$pre, paired = TRUE)
-levdat <- data.frame(value = c(a, b),
-  group = factor(rep(c("A", "B"), c(length(a), length(b)))))
-lev <- car::leveneTest(value ~ group, data = levdat, center = mean)
+# Provide cleaned finite numeric vectors a and b; fix policy first.
 policy <- "course"  # Set before examining results; alternatively "welch".
 stopifnot(policy %in% c("course", "welch"))
-use_pooled <- policy == "course" && lev[["Pr(>F)"]][1] > 0.05
-fit <- t.test(b, a, var.equal = use_pooled, conf.level = 0.95)
+safe_t <- function(x, y = NULL, paired = FALSE, ...) {
+  vectors <- if (is.null(y)) list(x) else list(x, y)
+  for (z in vectors) {
+    if (!is.numeric(z) || length(z) < 2 || any(!is.finite(z)))
+      stop("先核对数值、完整分析集及实际样本量")
+  }
+  if (paired && (is.null(y) || length(x) != length(y))) stop("先按键对齐完整对")
+  targets <- if (paired) list(x - y) else vectors
+  for (z in targets) {
+    if (diff(range(z)) == 0 || !is.finite(sd(z)) || sd(z) <= 0)
+      stop("退化资料：本教学t流程不计算检验")
+  }
+  if (paired && sd(x - y) <= 8 * .Machine$double.eps * max(abs(c(x, y))))
+    stop("配对差值变异在浮点精度下不可分辨")
+  fit <- t.test(x, y, paired = paired, ...)
+  if (any(!is.finite(c(fit$statistic, fit$parameter, fit$p.value, fit$conf.int))))
+    stop("检验输出不可定义，未通过验收")
+  fit
+}
+safe_sw <- function(z) {
+  if (length(z) < 3 || length(z) > 5000 || any(!is.finite(z)) || diff(range(z)) == 0)
+    return(list(status = "not_assessed", reason = "Shapiro requires 3..5000 finite nonconstant values"))
+  shapiro.test(z)
+}
+# Other designs after their own input checks:
+# safe_t(x, mu = mu0)
+# safe_t(dat$post, dat$pre, paired = TRUE)  # ID-aligned complete pairs only.
+lev <- list(center = "mean", status = "not_required_by_prespecified_Welch")
+use_pooled <- FALSE
+if (policy == "course") {
+  # Mean-centred Levene: one-way ANOVA of absolute within-group deviations.
+  # This base-R implementation does not require the car package.
+  deviations <- data.frame(value = c(abs(a - mean(a)), abs(b - mean(b))),
+    group = factor(rep(c("A", "B"), c(length(a), length(b)))))
+  lev <- oneway.test(value ~ group, data = deviations, var.equal = TRUE)
+  if (!is.finite(lev$p.value)) stop("课程Levene不可定义：须核查，不能默认选某行")
+  use_pooled <- lev$p.value > 0.05
+}
+fit <- safe_t(b, a, var.equal = use_pooled, conf.level = 0.95)
+diagnostics <- list(shapiro_A = safe_sw(a), shapiro_B = safe_sw(b), levene = lev)
 dir.create("output", recursive = TRUE, showWarnings = FALSE)
 write.csv(data.frame(direction = "B - A", method = fit$method,
   t = unname(fit$statistic), df = unname(fit$parameter), p = fit$p.value,
   mean_diff = mean(b) - mean(a), ci_low = fit$conf.int[1], ci_high = fit$conf.int[2]),
   "output/t_result.csv", row.names = FALSE)
-capture.output(list(shapiro_A = shapiro.test(a), shapiro_B = shapiro.test(b),
-  levene = lev, test = fit, versions = sessionInfo()), file = "output/t_run.txt")
+capture.output(list(diagnostics = diagnostics, test = fit, versions = sessionInfo()),
+               file = "output/t_run.txt")
 ```
+
+上述R模板用基础`stats`实现显式mean中心Levene；如改用`car::leveneTest`，须同样指定`center=mean`并另核包版本。预设Welch不要求Levene成功；Shapiro不适用时记录状态，不能借此宣布正态。完整教学数据的R数值复核命令与实跑环境见仓库验证记录。
 
 ### 轨 C：Python（SciPy，脚本产物可复跑）
 
