@@ -1,6 +1,6 @@
 # χ² 检验例题（references/examples）
 
-例1使用`datasets/teaching/adverse_events.csv`的教学模拟数据；例2是课堂构造的配对频数。参考数值由Python实际复算。本文件的Python调用从仓库根目录运行，计算与保存由`scripts/analyze_teaching.py`完成，不运行数据生成脚本覆盖输入。R/SPSS本次未实跑，须在所用环境核对后再标为通过。
+例1使用`datasets/teaching/adverse_events.csv`的教学模拟数据；例2是课堂构造的配对频数。参考数值由Python实际复算。本文件的Python调用从仓库根目录运行，计算与保存由`scripts/analyze_teaching.py`完成，不运行数据生成脚本覆盖输入。R代码另在WebR/R 4.6.0执行过；桌面R与SPSS仍须在所用环境核对后再标为通过。
 
 ---
 
@@ -72,26 +72,31 @@ print(json.dumps(r, ensure_ascii=False, indent=2))
 | 样本OR及算法 | effects.odds_ratio_sample.estimate / ci95 / ci_method |
 | RD及算法 | effects.risk_difference.estimate / ci95 / ci_method |
 
-### R效应输出补充（接主文件轨B运行，本次未实跑）
+### R效应输出补充（接主文件轨B运行；WebR已执行）
 
 ```r
 # 使用主文件已校验方向的tab；样本OR/Wald区间与Fisher条件OR分开。
 a <- as.numeric(tab[1, 1]); b <- as.numeric(tab[1, 2])
 c <- as.numeric(tab[2, 1]); d <- as.numeric(tab[2, 2])
-if (all(tab > 0)) {
-  sample_or <- a * d / (b * c)
-  or_ci <- exp(log(sample_or) + c(-1, 1) * 1.96 * sqrt(sum(1 / tab)))
-} else {
-  sample_or <- NA_real_; or_ci <- c(NA_real_, NA_real_)
-  message("存在零格：此片段未估计样本OR的稀疏区间；不得加0.5凑值")
-}
+stopifnot(all(is.finite(tab)), all(tab >= 0), all(tab == floor(tab)),
+          all(rowSums(tab) > 0), all(colSums(tab) > 0))
+expected <- outer(rowSums(tab), colSums(tab)) / sum(tab)
+sample_or <- if (b * c > 0) a * d / (b * c) else Inf
 pA <- a / (a + b); pB <- c / (c + d)
 rd <- pA - pB
-rd_ci <- rd + c(-1, 1) * 1.96 * sqrt(
-  pA * (1 - pA) / (a + b) + pB * (1 - pB) / (c + d))
+or_ci <- rd_ci <- c(NA_real_, NA_real_)
+ci_status <- "not_estimated_sparse_or_zero_cell"
+if (all(tab > 0) && min(expected) >= 5) {
+  or_ci <- exp(log(sample_or) + c(-1, 1) * 1.96 * sqrt(sum(1 / tab)))
+  rd_ci <- rd + c(-1, 1) * 1.96 * sqrt(
+    pA * (1 - pA) / (a + b) + pB * (1 - pB) / (c + d))
+  ci_status <- "Wald_z_1.96"
+} else {
+  message("稀疏或零格：保留可定义点估计，当前片段未估计适当区间；不得加0.5凑值")
+}
 effects <- list(direction = "A药相对B药，事件=发生",
                 sample_OR = sample_or, log_Wald_OR_CI95 = or_ci,
-                RD = rd, independent_Wald_RD_CI95 = rd_ci)
+                RD = rd, independent_Wald_RD_CI95 = rd_ci, ci_status = ci_status)
 capture.output(effects, file = "output/chi_square_R/effects.txt")
 # 如查看fisher.test(tab)的estimate/conf.int，应标条件MLE/条件精确CI；
 # 不把它们当作sample_OR/log-Wald区间。上面的Wald计算只演示本非稀疏表。
@@ -158,7 +163,7 @@ print(result)
 
 如改用statsmodels，须先处理m=0，再调用`mcnemar(paired, exact=True)`；不要把渐近统计量填入精确结果。
 
-### R等价精确路线（本次未实跑）
+### R等价精确路线（WebR已执行）
 
 ```r
 paired <- matrix(c(42, 18, 6, 54), nrow = 2, byrow = TRUE,
