@@ -37,6 +37,8 @@ python -m unittest discover -s tests -v
 
 参考答案用于核对；学生报告必须引用自己的本次输出。数据生成命令仅供维护者重建合成数据，与分析命令分开。
 
+分析还保存 `diagnostics.png` 与 `diagnostic_points.csv`：分别画两组含量数据和完整对的 `ln(T)−ln(R)` 差值，作图点保留个体标识并与本次分析集一致。打开图形后，在 `DECISIONS.md` 记一句对尾部、弯曲或异常点的判断；JSON 的 `requires_human_review` 不等于已验过前提。图形不能证明独立性，接近直线也不证明正态。
+
 第一份课堂任务可用 [两药不良事件限定试用作业](docs/teaching-pilot.md)。教师先在本课机位走通所选软件路线，再收集学生实际卡点。
 
 ## 浏览全部 skill
