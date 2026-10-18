@@ -14,7 +14,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from scripts.analyze_teaching import (align_pairs, analyze_contingency, analyze_log_pairs, analyze_independent_t,
-    analyze_mcnemar, analyze_mcnemar_pairs, event_table, run_analysis, select_t_method)
+    analyze_mcnemar, analyze_mcnemar_pairs, diagnostic_sample, event_table, run_analysis, select_t_method)
 
 spec = importlib.util.spec_from_file_location("teaching_generator", ROOT / "datasets/teaching/generate_datasets.py")
 generator = importlib.util.module_from_spec(spec)
@@ -64,6 +64,19 @@ class TeachingAnalysisTests(unittest.TestCase):
         json.dumps(result, allow_nan=False)
         with self.assertRaises(ValueError):
             analyze_independent_t(frame, policy="course")
+
+    def test_constant_decimal_groups_cannot_create_false_welch_precision(self):
+        frame = pd.DataFrame({"process": ["A_对照工艺"] * 20 + ["B_新工艺"] * 20,
+                              "assay_pct": [100.1] * 20 + [100.2] * 20})
+        for policy in ("course", "welch"):
+            with self.subTest(policy=policy), self.assertRaisesRegex(ValueError, "退化资料"):
+                analyze_independent_t(frame, policy=policy)
+        # The guard must compare the observed range, not use a broad fixed
+        # tolerance that labels distinguishable low-variance samples constant.
+        frame["assay_pct"] = np.r_[100.1 + np.arange(20) * 1e-10,
+                                    100.2 + np.arange(20) * 1e-10]
+        result = analyze_independent_t(frame, policy="welch")
+        self.assertTrue(np.isfinite(result["tests"]["welch"]["statistic"]))
 
     def test_frozen_log_pair_values(self):
         case = self.results["paired_log_demo"]
@@ -173,6 +186,16 @@ class TeachingAnalysisTests(unittest.TestCase):
         self.assertEqual(infinite["effects"]["odds_ratio_sample"]["estimate_status"], "infinite")
         self.assertIsNone(infinite["effects"]["odds_ratio_sample"]["estimate"])
 
+    def test_positive_sparse_cells_do_not_receive_unqualified_wald_intervals(self):
+        case = analyze_contingency([[1, 2], [12, 1]])
+        self.assertEqual(case["primary_method"], "fisher")
+        self.assertAlmostEqual(case["tests"]["fisher"]["pvalue"], 1 / 14, places=12)
+        odds = case["effects"]["odds_ratio_sample"]
+        self.assertAlmostEqual(odds["estimate"], 1 / 24, places=12)
+        self.assertIsNone(odds["ci95"])
+        self.assertEqual(odds["ci_method"], "not_estimated_sparse_or_zero_cell")
+        self.assertIsNone(case["effects"]["risk_difference"]["ci95"])
+
     def test_invalid_frequency_and_unknown_codes_are_not_silently_dropped(self):
         for table in ([[0.2, 0.8], [1, 2]], [[-1, 2], [3, 4]], [[np.nan, 1], [2, 3]], [[1, 2, 3], [4, 5, 6]]):
             with self.assertRaises(ValueError):
@@ -230,8 +253,48 @@ class TeachingAnalysisTests(unittest.TestCase):
             table = pd.read_csv(output / "adverse_events_table.csv", index_col=0)
             self.assertEqual(table.columns.tolist(), ["发生", "未发生"])
             self.assertEqual(table.to_numpy().tolist(), [[24, 96], [8, 112]])
+            diagnostic = saved["diagnostics"]
+            self.assertEqual(diagnostic["review_status"], "requires_human_review")
+            self.assertEqual(diagnostic["automated_normality_decision"], "not_made")
+            self.assertEqual((output / "diagnostics.png").read_bytes()[:8], b"\x89PNG\r\n\x1a\n")
+            points = pd.read_csv(output / "diagnostic_points.csv")
+            self.assertEqual(points.groupby("sample").size().to_dict(),
+                             {"paired_log_difference": 24, "tablet_A": 20, "tablet_B": 20})
+            paired_points = points.loc[points["sample"] == "paired_log_difference"].set_index("observation_id")
+            original = self.paired.set_index("subject_id")
+            for key, point in paired_points.iterrows():
+                self.assertAlmostEqual(point.value, np.log(original.loc[key, "cmax_T"]) - np.log(original.loc[key, "cmax_R"]), places=12)
         for path in paths:
             self.assertEqual(path.read_bytes(), before[path])
+
+    def test_qq_points_keep_ids_ties_and_do_not_certify_skewed_data(self):
+        sample = diagnostic_sample("skewed", ["z", "a", "b", "c"], [100., 1., 1., 2.], "units")
+        self.assertEqual([point["observation_id"] for point in sample["points"]], ["a", "b", "c", "z"])
+        self.assertEqual([point["value"] for point in sample["points"]], [1., 1., 2., 100.])
+        self.assertEqual(sample["n"], 4)
+        self.assertTrue(np.isfinite([point["normal_quantile"] for point in sample["points"]]).all())
+        self.assertNotIn("normality_passed", sample)
+        for values, keys in (([1.], ["a"]), ([1., np.nan], ["a", "b"]), ([1., 2.], ["a"])):
+            with self.assertRaises(ValueError):
+                diagnostic_sample("invalid", keys, values, "units")
+
+    def test_diagnostic_points_follow_analysis_exclusions(self):
+        with tempfile.TemporaryDirectory() as temp:
+            for path in (ROOT / "datasets/teaching").glob("*.csv"):
+                frame = pd.read_csv(path)
+                if path.stem == "tablet_assay":
+                    frame.loc[frame.tablet_id == "A01", "assay_pct"] = np.nan
+                elif path.stem == "bioeq_cmax":
+                    frame.loc[frame.subject_id == "S03", "cmax_R"] = np.nan
+                    frame = frame.sample(frac=1, random_state=17)
+                frame.to_csv(Path(temp) / path.name, index=False)
+            result = run_analysis(temp)
+            samples = {sample["name"]: sample for sample in result["diagnostics"]["samples"]}
+            self.assertEqual(samples["tablet_A"]["n"], result["tablet_assay"]["groups"]["A"]["n"])
+            self.assertEqual(samples["paired_log_difference"]["n"], result["paired_log_demo"]["analysis_set"]["complete_pairs"])
+            self.assertNotIn("A01", [point["observation_id"] for point in samples["tablet_A"]["points"]])
+            self.assertEqual(set(result["paired_log_demo"]["included_ids"]),
+                             {point["observation_id"] for point in samples["paired_log_difference"]["points"]})
 
 
 if __name__ == "__main__":
