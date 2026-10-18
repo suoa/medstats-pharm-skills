@@ -2,13 +2,15 @@
 
 例题1、2使用本仓库`datasets/teaching/`中的**示意构造数据**；单样本例题3仅为待填输入的模板。数据生成与学生分析分开：不要为得到答案重建原始数据；读取已提交CSV，运行共同分析脚本，保存本次真实结果后再写报告。本页参考数字来自对提交CSV的复算，不能冒充学生本次运行。
 
-在仓库根目录先运行一次（Python依赖见仓库安装说明）：
+在仓库根目录先运行一次（Python依赖见仓库安装说明；输出目录必须尚不存在，空目录也拒绝）：
 
 ```bash
 python scripts/analyze_teaching.py --output-dir output/teaching --t-policy course
 ```
 
-该命令采用事先指定的课程Levene(mean)路线，保存`results.json`、`summary.csv`和`summary.txt`。若教师事先指定通用Welch路线，改用`--t-policy welch`并读取对应主结果；不能看P后更换。JSON保留输入、版本、方向与未舍入结果，文本与表格供阅读。执行失败保留错误，不能复制下方参考值生成伪输出；不能保存时如实写“已计算，尚未保存”。
+该命令采用事先指定的课程Levene(mean)路线，保存`results.json`、`summary.csv`、`summary.txt`，以及事件表`adverse_events_table.csv`、图形`diagnostics.png`和逐点数据`diagnostic_points.csv`，共六份产物。若教师事先指定通用Welch路线，改用`--t-policy welch`并读取对应主结果；不能看P后更换。JSON保留输入、版本、方向与未舍入结果，文本与表格供阅读。执行失败保留错误，不能复制下方参考值生成伪输出；不能保存时如实写“已计算，尚未保存”。
+
+下列读取块复用刚生成的同一轮结果，无须再次计算。需要重跑时另选输出目录，并将本页各读取块的路径一起改到该目录；上一轮文件保留。
 
 本次有Python数值与文件输出的实跑验收；脚本数值不等于图形前提已经核验，Q-Q图仍须学生/教师实际查看。基础R已有WebR/R 4.6.0数值复算及模板执行，桌面R与SPSS尚待实机验证。三轨可选不等于三轨均已验证，实际范围见仓库验证记录。
 
