@@ -11,11 +11,13 @@ python scripts/analyze_teaching.py --output-dir output/teaching --t-policy cours
 python -m unittest discover -s tests -v
 ```
 
+以上是首轮示例路径。共用Python分析命令现在要求输出目录尚不存在，空目录也拒绝；复跑须改用新目录，并同步下游读取结果及R复核命令的Python摘要路径。
+
 Python 基线：Python 3.12.14、NumPy 2.3.5、pandas 2.2.3、SciPy 1.17.0、Matplotlib 3.10.8。具体依赖与实际输出中的版本信息一起核对；最新在线文档版本可能高于本轮实跑版本。
 
 还创建了复用系统预装包的独立 venv，实际执行 `python -m pip install -r requirements-teaching.txt` 成功（新增安装statsmodels 0.15.0等依赖），随后在该环境运行分析命令和全部19项测试均通过。此验收覆盖当前运行环境，不代表所有操作系统或完全空白环境均安装通过。
 
-上述命令当前已执行通过：**26项 unittest（22项数值/边界/图形数据检查、2项技能分发检查、2项SPSS打包溯源与拒绝覆盖检查）**。另运行 `--t-policy welch`，结果及图形正常保存到独立目录；三个技能此前均通过 skill-creator 的 `quick_validate.py` 格式核验；后续R模板改动已另行实跑核对，`git diff --check` 通过。三份原始 CSV 相对基线的字节未变；固定种子重建在临时目录逐表比较通过，不要求尾空行等格式字节相同。
+上述命令当前已执行通过：**28项 unittest（22项数值/边界/图形数据检查、2项输出目录保护检查、2项技能分发检查、2项SPSS打包溯源与拒绝覆盖检查）**。另运行 `--t-policy welch`，结果及图形正常保存到独立目录；三个技能此前均通过 skill-creator 的 `quick_validate.py` 格式核验；后续R模板改动已另行实跑核对，`git diff --check` 通过。三份原始 CSV 相对基线的字节未变；固定种子重建在临时目录逐表比较通过，不要求尾空行等格式字节相同。
 
 | 复算项 | 本次结果 | 方法与方向 |
 |---|---|---|
@@ -78,6 +80,16 @@ Rscript tests/test_R_templates.R
 已实际执行`python scripts/build_spss_check.py --output-dir output/spss-workstation-check`，生成可独立解压的ZIP：含一次性设置语法、四项任务语法、三份原始CSV的逐字节副本、Python重新计算的64条具名参考值、空白机房记录和SHA-256清单。四项任务分别为独立t、配对对数演示、独立四格表和精确McNemar复核；不含SPV/PDF或伪造截图。学生使用成包不需要Python/R。
 
 实际测试确认输入副本/ZIP散列、参考值来源、所有实测值为空且状态为`not_run`，并确认已有目标目录或ZIP被拒绝覆盖。独立复核又补上点小数设置、把初始化纳入第一选区，并明确SPSS实跑须用全新解压目录，避免同名SPV被无提示覆盖。人工STOP注释不构成自动中断；本轮仅静态核对IBM命令资料，没有SPSS解析器或实机运行，不把64条参考值说成64项SPSS通过。操作步骤及版本/许可差异见[机房验收说明](spss-machine-check.md)。
+
+## 共用Python分析的输出保护：实际复跑
+
+独立审查在临时目录发现旧脚本以course、welch连续运行时均成功，却静默替换同一路径的六份输出。现于任何输出写入前创建全新目录；已有目录（包括空目录）、文件或链接占用该位置时拒绝保存并提示另选新目录，CLI返回非零状态。创建新目录后若写入中断，仍可能留下部分产物，须记“保存未完成”并在下次改用新目录；不把本改动写成六文件事务保存或所有软件通用保护。
+
+新增两项回归测试已实际通过：重复运行不会改变第一轮六份产物及学生备注，另选目录的Welch可以完成，已有空目录也被拒绝；已有输出目录内的`summary.csv`链接指向临时输入CSV时，在任何输出写入前拒绝，输入字节和链接保持不变。完整28项测试通过，没有把未运行的SPSS算入。
+
+已实际以course、welch分别保存到`output/output-guard-course/`和`output/output-guard-welch/`，各六份产物，输入哈希与现有CSV吻合。course的统计、图形数据五个根节与修复前留存结果逐项一致；本轮只改保存行为，未改统计算法。两项方法skill同步新目录及结果读取规则，并通过`quick_validate.py`。R代码未改，本轮未重新执行WebR/Rscript，既有R验收范围仍见前节。
+
+另由未继承整改上下文的新任务代理按t-test技能说明执行两条事先指定策略，分别保存到两个新目录；两次退出码为0、stderr为空，第二轮后第一轮六份文件逐字节保持，三个输入CSV哈希不变。走查又校正了技能中笼统的`output/figures/`路径：共用Python脚本的图与其他结果都位于本轮指定目录根部。该试验只覆盖这两次Python文件流程，不等于R/SPSS、平台自动触发或真实课堂验收。
 
 ## 尚未执行或待核
 
