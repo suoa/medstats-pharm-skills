@@ -36,7 +36,7 @@ tab = pd.crosstab(df["drug"], df["adverse_event"]).reindex(
 )
 print(tab)  # [[24,96],[8,112]]，事件优先
 
-out = Path("output/teaching")
+out = Path("output/teaching")  # Must not exist; change for another run.
 subprocess.run([
     sys.executable, "scripts/analyze_teaching.py",
     "--output-dir", str(out), "--t-policy", "course"
@@ -47,6 +47,8 @@ print(json.dumps(r, ensure_ascii=False, indent=2))
 ```
 
 共用脚本检验退化表、计算具名方法与效应区间，并写出`adverse_events_table.csv`、`results.json`、`summary.csv`和`summary.txt`。教学表与统计输出均保留，不从参考答案补数字。
+
+上面是重新分析并保存的完整流程，`out`必须尚不存在，已有空目录也拒绝。若已在本次任务生成结果，直接读取该轮文件；需要重跑时另选新`out`，后面的读取会使用相同变量。保留旧文件及LOG，不把已有路径下的参考输出冒充本次新运行。
 
 ### 本次参考结果
 
