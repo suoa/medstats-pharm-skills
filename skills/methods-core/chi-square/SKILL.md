@@ -86,7 +86,7 @@ description: 比较独立组分类结局的率或完整构成，或比较两个�
 - 按总数和期望频数执行本次课程链，再读取对应Pearson、连续性校正或Fisher双侧行/列。McNemar勾选对应统计项，检查实际“精确/渐近”“双侧”列名及脚注，不假定自动算法。
 - 菜单用“粘贴”保留.sps，保存.spv及可读PDF导出。允许准确转录并写明表名/行列；未输出的RD CI须用另经验证的过程计算，不能从答案补数。
 
-### 轨B：R（代码供本机运行；本次未实跑）
+### 轨B：R（已在WebR执行；桌面环境仍须核对）
 
 ```r
 dat <- read.csv("datasets/teaching/adverse_events.csv", check.names = FALSE)
@@ -131,7 +131,7 @@ if (m == 0) {
 python scripts/analyze_teaching.py --output-dir output/teaching --t-policy course
 ```
 
-查看`output/teaching/adverse_events_table.csv`、`results.json`和`summary.txt`。脚本固定事件优先方向，输出样本OR/log-Wald CI、RD/Wald CI及具名检验；完整调用、配对零值保护和本次复算值见[例题](references/examples.md)。Python实跑范围以仓库验证记录为准；R/SPSS未实跑状态不能改写为三轨通过。
+查看`output/teaching/adverse_events_table.csv`、`results.json`和`summary.txt`。脚本固定事件优先方向，输出样本OR/log-Wald CI、RD/Wald CI及具名检验；完整调用、配对零值保护和本次复算值见[例题](references/examples.md)。各轨实跑范围以仓库验证记录为准；R的WebAssembly验收不能改写为桌面R与SPSS均通过。
 
 ## 5. 结果报告模板
 
