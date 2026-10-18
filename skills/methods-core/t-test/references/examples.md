@@ -1,6 +1,16 @@
 # t 检验例题（references/examples）
 
-全部例题使用本仓库 `datasets/teaching/` 中的模拟数据，统计数字由 `generate_datasets.py` 实跑生成（见该目录 `reference_outputs.txt`）。学生应自己重跑核对，不允许照抄本文件数字当结果。
+例题1、2使用本仓库`datasets/teaching/`中的**示意构造数据**；单样本例题3仅为待填输入的模板。数据生成与学生分析分开：不要为得到答案重建原始数据；读取已提交CSV，运行共同分析脚本，保存本次真实结果后再写报告。本页参考数字来自对提交CSV的复算，不能冒充学生本次运行。
+
+在仓库根目录先运行一次（Python依赖见仓库安装说明）：
+
+```bash
+python scripts/analyze_teaching.py --output-dir output/teaching --t-policy course
+```
+
+该命令采用事先指定的课程Levene(mean)路线，保存`results.json`、`summary.csv`和`summary.txt`。若教师事先指定通用Welch路线，改用`--t-policy welch`并读取对应主结果；不能看P后更换。JSON保留输入、版本、方向与未舍入结果，文本与表格供阅读。执行失败保留错误，不能复制下方参考值生成伪输出；不能保存时如实写“已计算，尚未保存”。
+
+本次有Python数值与文件输出的实跑验收；脚本数值不等于图形前提已经核验，Q-Q图仍须学生/教师实际查看。R/SPSS仍为官方文档与静态核对，未实际运行。三轨可选不等于三轨均已验证。
 
 ---
 
@@ -10,25 +20,26 @@
 
 ### 路由
 
-计量资料（assay_pct，%）；两组片剂互不重叠 → 独立两组；比较均数 → 独立样本 t 检验候选；先查正态性与方差齐性。
+计量资料（assay_pct，标示量百分比）；目标为B−A均数差。**本计算练习预设各片观测独立**，并用课程Levene(mean)路线；CSV的ID不同不能证明真实工艺重复独立。真实研究须核每工艺批次数及抽样单位；每工艺仅一批而多片取样，不能据此推广工艺效果。先检查两组分布、异常值及设计依据，再按预设规则分析。
 
-### Python 全过程
+### Python：读取本次已保存结果
 
 ```python
-import pandas as pd
-from scipy import stats
+import json
+from pathlib import Path
 
-df = pd.read_csv("datasets/teaching/tablet_assay.csv")
-a = df.loc[df.process == "A_对照工艺", "assay_pct"]
-b = df.loc[df.process == "B_新工艺", "assay_pct"]
-
-print(a.describe(), b.describe())
-print("Shapiro A:", stats.shapiro(a))   # W=0.955, P=0.449
-print("Shapiro B:", stats.shapiro(b))   # W=0.942, P=0.264
-print("Levene:", stats.levene(a, b, center="mean"))  # F=0.739, P=0.395
-print("pooled t:", stats.ttest_ind(b, a, equal_var=True))   # t=2.338, P=0.0248
-print("Welch t:", stats.ttest_ind(b, a, equal_var=False))   # t=2.338, P=0.0249
+results = json.loads(Path("output/teaching/results.json").read_text(encoding="utf-8"))
+case = results["tablet_assay"]
+primary = case["tests"][case["primary_method"]]
+print("Direction:", case["direction"])
+print("Groups:", case["groups"])
+print("Levene:", case["levene"])
+print("Primary method:", case["primary_method"])
+print("Primary result:", primary)
+print("Cohen d (pooled SD):", case["cohens_d"])
 ```
+
+分析脚本实际计算两种t的统计量、df、P、均数差和各自95%CI，并输出以合并SD为分母的可选d；报告读取`tablet_assay.tests.<primary_method>`。本例课程分流选pooled，Welch只标对照。JSON中的`groups.A/B`保存n、均数、SD和Shapiro结果，`levene`记录中心算法；不从参考答案手填结果文件。
 
 ### 结果（参考答案）
 
@@ -37,64 +48,70 @@ print("Welch t:", stats.ttest_ind(b, a, equal_var=False))   # t=2.338, P=0.0249
 | A 对照工艺 | 20 | 98.497 | 0.958 |
 | B 新工艺 | 20 | 99.257 | 1.093 |
 
-- Shapiro–Wilk：A 组 W=0.955、P=0.449，B 组 W=0.942、P=0.264，均近似正态；
-- Levene：F=0.739、P=0.395，方差齐，读合并方差 t 行；
+- Shapiro–Wilk：A组W=0.955、P=0.449，B组W=0.942、P=0.264；未发现足以拒绝正态性的证据，仍须查看Q-Q图与异常值，不能仅据这两个P宣布正态；
+- Levene(mean)：F=0.739、P=0.395；未发现方差不齐的证据，按本题指定课程规则读合并方差t；
 - **t(38)=2.338，P=0.025**；均数差 B−A=0.760 个百分点，95%CI（0.102，1.418），Cohen's d=0.739。
+- 预设Welch路线若为主要分析：t=2.338、df=37.359、P=0.025，95%CI（0.101496，1.418504）；此区间不能换成pooled区间。两法本例t相同是因为组样本量相等，不是一般结论。
 
 ### 报告示范
 
-> 对照工艺组含量为 98.50%±0.96%（n=20），新工艺组为 99.26%±1.09%（n=20）。经 Shapiro–Wilk 检验两组均近似正态（P 均>0.05），Levene 检验方差齐（F=0.739，P=0.395），采用两独立样本 t 检验，t=2.338，df=38，P=0.025；新工艺组平均含量高 0.76 个百分点（95%CI：0.10～1.42）。两组含量均在药典限度（标示量 95.0%–105.0%）内，约 0.8 个百分点的差异虽达到 α=0.05 的统计学显著水平，但不具有制剂学专业意义。
+> 在独立观测的教学假设下，对照工艺组含量为98.50%±0.96%（n=20），新工艺组为99.26%±1.09%（n=20）。Shapiro–Wilk未发现足以拒绝正态性的证据（P均>0.05），分布形态仍需结合图形核查。Levene(mean)检验F=0.739、P=0.395，按预设课程路线采用合并方差t检验，t(38)=2.338，P=0.025；B−A均数差为0.76个百分点，95%CI为0.10～1.42。该结果达到预设α=0.05的统计学阈值；尚缺专业重要差异界值和明确药品品种标准，不能据此判断专业重要性或药典合格性。
 
-教学点：**P<0.05 只说明"观测到的差异不太像抽样误差"，不说明差异重要。**
+95.0%–105.0%若用于课堂讨论，只能称“本情境预设的示意范围”，不称通用药典限度；均数比较不替代品种放行或逐片质量判断。P值是在H₀及模型假设下出现当前或更极端统计结果的概率，不是“差异由随机造成的概率”，也不衡量效应重要性。
+
+数值来源：`output/teaching/results.json`中`tablet_assay.groups`、`levene`、`tests.pooled`与`cohens_d`；实际作业须注明自己这次输出路径。报告中的图形判断只有在实际查看图形后才可补写“未见明显偏态/异常值”。
 
 ### SPSS 读图提示
 
-独立样本检验输出有两列 t："假设等方差"（合并方差）与"不假设等方差"（Welch）。本例 Levene P=0.395，读第一行。
+独立样本检验常见“假设等方差”（合并方差）与“不假设等方差”（Welch）两行；本题采用课程路线，Levene P=0.395时读第一行。若预设Welch，则固定读第二行；不得比较两行后挑较小P。通过增加P显示精度处理`.050`边界，保存`.sps/.spv`和含表名导出。SPSS本例尚待机房实际验证。
 
 ---
 
-## 例题 2：配对 t（对数尺度）—— 生物等效性交叉试验
+## 例题 2：配对 t（对数尺度）—— 等效界值教学演示
 
-数据：`datasets/teaching/bioeq_cmax.csv`（24 名受试者，cmax_T、cmax_R 单位 ng/mL）。
+数据：`datasets/teaching/bioeq_cmax.csv`（24个示意对象，`subject_id`、`cmax_T`、`cmax_R`，单位ng/mL）。文件名为历史命名；现有列不含sequence、period或AUC，**不能当作完整双周期双交叉BE数据**。按ID确认唯一对象、完整对和正值，检查对象间独立的教学假设。
 
 ### 为什么先取对数
 
-Cmax 右偏、个体间差异远大于制剂间差异。BE 评价惯例对 Cmax、AUC 取自然对数：差值 ln(T)−ln(R) 近似正态，且 80%–125% 的等效界值在对数尺度上关于 0 对称。
+浓度数据常见右偏；本例用正值T、R的自然对数演示差值与比值的转换。检查的是ln(T)−ln(R)的分布，不能假定取对数后必然正态。预设教学界值为80.00%–125.00%；ln(0.8)与ln(1.25)关于0对称。本例使用90%CI演示区间条件，不把这一规则无条件推广到特殊品种或复杂BE设计。
 
 ### Python
 
 ```python
-import numpy as np, pandas as pd
-from scipy import stats
+import json
+from pathlib import Path
 
-df = pd.read_csv("datasets/teaching/bioeq_cmax.csv")
-ln_t, ln_r = np.log(df.cmax_T), np.log(df.cmax_R)
-d = ln_t - ln_r                       # 配对差值
-print(stats.shapiro(d))               # 先检查差值正态性：W=0.971, P=0.682
-print(stats.ttest_rel(ln_t, ln_r))    # t=-0.624, df=23, P=0.539
-
-# 几何均值比 GMR 及其 90% CI（等效性用 90% CI，不是 95%）
-n = len(df)
-m, se = d.mean(), d.std(ddof=1) / np.sqrt(n)
-tcrit = stats.t.ppf(0.95, n - 1)
-gmr = np.exp(m) * 100
-ci = (np.exp(m - tcrit * se) * 100, np.exp(m + tcrit * se) * 100)
-print(f"GMR={gmr:.2f}%  90%CI=({ci[0]:.2f}%, {ci[1]:.2f}%)")
+results = json.loads(Path("output/teaching/results.json").read_text(encoding="utf-8"))
+case = results["paired_log_demo"]
+print("Analysis set:", case["analysis_set"])
+print("Shapiro of log differences:", case["shapiro"])
+print("Paired t:", case["paired_t"])
+print("GMR (%):", case["gmr_pct"])
+print("90% CI (%):", case["ci90_pct"])
+print("Teaching interval criterion met:", case["interval_criterion_met"])
+print("Formal BE assessment:", case["formal_be_assessment"])
 ```
+
+上述共同脚本先计算d=ln(T)−ln(R)，再算m=mean(d)、SE=SD(d)/√n；90%区间为`100×exp(m±t(0.95,n−1)×SE)`。`paired_t.ci95_mean_log_difference`是差值均数95%CI，`ci90_pct`是几何均值比90%CI，不能互换。GMR是各配对T/R比值的几何均值，不用原尺度算术均数比替代。
 
 ### 结果（参考答案）
 
-- 差值 Shapiro–Wilk 无异常（脚本数据按对数正态构造）；
+- 差值Shapiro–Wilk W=0.971、P=0.682；仅表示未发现足以拒绝正态性的证据，图形与异常值仍应核查；
 - 配对 t：**t(23)=−0.624，P=0.539**；
-- GMR = 98.10%，**90% CI（93.06%，103.41%）**，完全落在 80.00%–125.00% 界值内 → 生物等效成立。
+- GMR=98.10%，**90%CI（93.06%，103.41%）**；在简化配对教学模型中，区间完全进入预设界值，`interval_criterion_met=true`；
+- `formal_be_assessment="not_assessed"`：无论教学区间条件是否满足，均不能据本数据作正式BE结论。
 
 ### 关键反直觉点（必讲）
 
-P=0.539 是"不能拒绝 T=R"，**这不是证明等效的逻辑**。若样本很小、置信区间很宽（比如 70%–140%），同样会 P>0.05，但明显不等效。BE 的判定只看 90% CI 是否落在界值内。完整规则与 AUC 平行分析见 `pharm-applications/bioequivalence` skill。
+P=0.539表示在所用模型下未拒绝“总体平均对数差为0”，不证明总体T、R相同或等效。若90%CI很宽，例如构造的70%–140%，应写“未能证明等效”，不能写“已证明不等效”。正式BE还须按适用指南、预设设计/统计模型及所需PK参数评价，不能只看本例一个区间。`pharm-applications/bioequivalence`尚未发布时可解释这些边界，不声称加载或完成了该流程。
 
-### 报告示范（Cmax 部分）
+### 报告示范（简化教学模型）
 
-> 24 名受试者 Cmax 经自然对数转换后进行配对分析，受试制剂与参比制剂几何均值比为 98.10%，其 90% 置信区间为 93.06%～103.41%，位于 80.00%～125.00% 等效界值内，认为两制剂 Cmax 生物等效。
+> 对24个示意对象的T、R正值取自然对数后作配对分析，差异检验t(23)=−0.624、P=0.539。简化模型的T/R几何均值比为98.10%，90%CI为93.06%～103.41%，满足预设80.00%～125.00%的教学区间条件。数据缺序列、周期和AUC，未作正式制剂BE评价。
+
+数值来源：`output/teaching/results.json`中的`paired_log_demo.analysis_set`、`paired_t`、`gmr_pct`和`ci90_pct`；报告同时保留`formal_be_assessment`。实际输入改变时，区间条件及说明应随本次未舍入区间更新，不能无条件输出“满足”。
+
+SPSS指导（未实跑）：按ID确认完整对后，计算LN(T)、LN(R)与对数差；正态性检查对数差。若做本教学区间演示，将配对分析的CI设置为90%，确认差值方向为LN(T)−LN(R)，再对区间端点取指数并乘100；另行标注所用区间，不能误读默认95%输出为90%。保存计算变量语法和结果来源。
 
 ---
 
@@ -108,5 +125,5 @@ from scipy import stats
 t, p = stats.ttest_1samp(weights, popmean=100)
 ```
 
-报告："片重 x̄±s=＿±＿mg（n=20），与标示值 100 mg 比较，t(19)=＿，P=＿，95%CI（＿，＿）。"
+报告：“片重x̄±s=＿±＿mg（n=20），与题目给定值100mg比较，t(19)=＿，P=＿；均数差x̄−100=＿mg，均数差95%CI（＿，＿）。”本模板尚无`weights`数据、没有实际运行，也不计为完整可复跑例题。软件给出总体均数CI时，报告差值CI需两端各减100mg。
 注意药典片剂重量差异检查有专属的计数式判定规则（超限片数），不是 t 检验，不要混用。
