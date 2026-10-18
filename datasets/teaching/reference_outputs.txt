@@ -1,26 +1,34 @@
-医学统计Skills 教学数据集 · 参考答案（由 generate_datasets.py 实跑生成）
-随机种子：20261017
+医学统计Skills 教学分析：由提交CSV实际计算
+Python=3.12.14; SciPy=1.17.0
+仅Python已运行；R/SPSS未运行。结果字段见results.json；本文件为其格式化摘要。
 
-【数据集1 bioeq_cmax.csv】配对 t（对数尺度）与生物等效性
-  T/R 几何均值比 GMR = 98.10%
-  配对 t（ln T vs ln R）：t = -0.624, df = 23, p = 0.5388
-  GMR 的 90% CI = (93.06%, 103.41%)
-  判定：90%CI 完全落在 80.00–125.00% 内 → 生物等效成立
+【tablet_assay】方向 B - A；单位：百分点；policy=course
+  A: n=20, mean=98.497, SD=0.958; Shapiro W=0.955, P=0.449
+  B: n=20, mean=99.257, SD=1.093; Shapiro W=0.942, P=0.264
+  Levene(center=mean): F=0.739, P=0.395428; primary=pooled
+  pooled: t=2.338, df=38.000000, P=0.024768; mean_diff=0.760, 95%CI=(0.102, 1.418)
+  welch: t=2.338, df=37.359338, P=0.024863; mean_diff=0.760, 95%CI=(0.101, 1.419)
+  Cohen d (pooled SD)=0.739256; professional_significance=not_assessed; pharmacopoeial_compliance=not_assessed
 
-【数据集2 tablet_assay.csv】独立样本 t 检验
-  A 对照工艺：mean = 98.497, SD = 0.958, Shapiro W = 0.955, p = 0.449
-  B 新工艺  ：mean = 99.257, SD = 1.093, Shapiro W = 0.942, p = 0.264
-  Levene 方差齐性：F = 0.739, p = 0.395
-  合并方差 t 检验：t = 2.338, df = 38, p = 0.0248
-  Welch t（对照）：t = 2.338, p = 0.0249
-  均数差 B−A = 0.760 个百分点，95%CI = (0.102, 1.418)
-  Cohen d = 0.739
-  教学点：统计可能显著，但约 1 个百分点的差异远小于药典含量允许波动，无专业意义
+【paired_log_demo】ln(T)-ln(R)；仅配对等效界值演示
+  complete_pairs=24; excluded_pairs=0; t=-0.624, df=23, P=0.538838
+  GMR=98.10%; 90%CI=(93.06%, 103.41%); interval_criterion_met=True
+  满足本教学模型的区间条件; formal_be_assessment=not_assessed
 
-【数据集3 adverse_events.csv】四格表卡方
-  A 药不良反应率 = 20.0%（24/120），B 药 = 6.7%（8/120）
-  理论频数：[ 16. 104.  16. 104.]（均 ≥5），总 n = 240（≥40）→ 普通卡方
-  Pearson χ² = 9.231, df = 1, p = 0.0024
-  连续性校正 χ² = 8.113, p = 0.0044（本科教材要求时报告）
-  OR = 3.500，95%CI = (1.503, 8.151)
-  Fisher 精确检验（对照）p = 0.0038
+【adverse_events】行[A药,B药]，列[发生,未发生]；OR为A相对B发生事件
+  table=[[24, 96], [8, 112]]; n=240; expected=[[16.0, 104.0], [16.0, 104.0]]; primary=pearson
+  pearson: chi2=9.230769, df=1, P=0.0023798165
+  yates: chi2=8.112981, df=1, P=0.0043949400
+  fisher: P=0.0038347022
+  odds_ratio_sample=3.500000, 95%CI=(1.502954, 8.150614); log_Wald_z_1.96
+  risk_difference=0.133333, 95%CI=(0.048988, 0.217678); unpooled_Wald_z_1.96
+
+【mcnemar_demo】课堂假设汇总表，不是独立两组
+  table=[[42, 18], [6, 54]]; n_pairs=120; b=18, c=6; b+c=24; primary=exact_binomial
+  exact_binomial: P=0.0226558447
+  chi_square_corrected: chi2=5.041667, df=1, P=0.0247446720
+  chi_square_uncorrected: chi2=6.000000, df=1, P=0.0143058784
+
+【图形诊断】diagnostics.png；逐点数据见diagnostic_points.csv。
+  两独立组分别作图；配对分析只画ln(T)-ln(R)差值。review_status=requires_human_review。
+  图形接近直线不证明正态；仍须结合样本量、异常值及设计判断，不能由图形证明独立性。

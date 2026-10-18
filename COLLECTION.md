@@ -1,6 +1,6 @@
 # 目录索引（COLLECTION）
 
-按课题进度选装，不必全部安装。状态：✅ 已发布 v0.1 ｜ 🟡 v0.2 规划 ｜ ⚪ 待定。
+按课题进度选装，不必全部安装。状态：✅ 已发布 v0.1.1 ｜ 🟡 v0.2 规划 ｜ ⚪ 待定。
 
 ## 统计方法核心（methods-core）
 
@@ -58,12 +58,13 @@
 | 数据集 | 状态 | 配套 skill |
 |---|---|---|
 | tablet_assay.csv | ✅ | t-test |
-| bioeq_cmax.csv | ✅ | t-test（对数尺度 TOST 例题） |
+| bioeq_cmax.csv | ✅ | t-test（对数尺度等效界值教学演示，非正式 BE） |
 | adverse_events.csv | ✅ | chi-square |
 
 ## 版本路线
 
-- **v0.1（当前）**：router + t-test + chi-square + 3 数据集 + 模板与安装文档
+- **v0.1.1（当前）**：router + t-test + chi-square + 3 数据集 + 模板与安装文档；统计口径修订（OR 方向、前提检验表述、结论边界），维护者脚本移入 `maintainers/`
+- **v0.1**：首版（2026-10-17）
 - **v0.2**：methods-core 其余 8 个 + report-writing + result-interpretation
 - **v0.3**：pharm-applications 5 个 + openfda-data
 - **v1.0**：全部规划 skill、教学试用一轮后定稿
