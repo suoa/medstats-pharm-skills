@@ -59,7 +59,7 @@ description: t 检验方法 skill（单样本、配对、两独立样本）。�
    - **通用路线**：预设Welch，不用Levene结果改变主要方法；不能据此改写教师指定的课程答案；
    - 软件只显示`.050`时提高精度，不能据显示值认定恰等于.05；仍无法判断则交教师核查。mean是经典Levene，median是常称Brown–Forsythe的变体；须明确版本与算法，不能假定各软件默认一致；
 4. 给出均数差（写明谁减谁）及所选方法的95%CI；Cohen's d可选，并注明分母定义，不能将pooled CI配给Welch；
-5. 输出写入 `output/`（表 + 文本结果），图写入 `output/figures/`。
+5. 将本轮表、文本和图保存到明确的输出路径并记入LOG。共用Python脚本把六份产物都写入指定新目录，包括`diagnostics.png`和`diagnostic_points.csv`；R/SPSS记录本轨实际保存位置。
 
 ### 3.4 收尾
 
@@ -157,7 +157,7 @@ stats.shapiro(a)  # At least 3 observations; not a pass/fail certificate.
 python scripts/analyze_teaching.py --output-dir output/teaching --t-policy course
 ```
 
-在仓库根目录运行；结果见`output/teaching/results.json`、`summary.csv`与`summary.txt`。若事先指定通用Welch路线，将参数改为`--t-policy welch`，报告相应CI。调用失败时保留真实错误，不补写参考数字冒充输出。
+在仓库根目录运行；输出目录必须尚不存在，已有空目录也拒绝。重跑另选`--output-dir`，同步修改读取路径并保留各轮输出。首次结果见`output/teaching/results.json`、`summary.csv`与`summary.txt`。若事先指定通用Welch路线，将参数改为`--t-policy welch`，报告相应CI。调用失败时保留真实错误，不补写参考数字冒充输出。
 
 ## 5. 结果报告模板
 
