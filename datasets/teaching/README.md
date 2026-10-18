@@ -22,8 +22,12 @@ python -m unittest discover -s tests -v
 | `summary.csv` | `field,value`表，每个字段直接对应JSON路径，便于核对报告数字 |
 | `summary.txt` | 本次结果的可读摘要 |
 | `adverse_events_table.csv` | 带标签的事件优先列联表，固定行A药/B药、列发生/未发生 |
+| `diagnostics.png` | 两组含量数据、完整配对对数差值的正态Q–Q图；须人工查看 |
+| `diagnostic_points.csv` | 每点的样本、标识、秩、观测值、标准正态分位数和参考线值，与分析排除规则一致 |
 
-`reference_outputs.txt`是上述分析脚本实际输出的冻结摘要，供教师核对。学生须保留自己的本次输出，不得把参考文件当作自己的运行结果。JSON根键为`metadata`、`tablet_assay`、`paired_log_demo`、`adverse_events`、`mcnemar_demo`；最后一项来自例题中的明确汇总表，不冒充个体CSV。
+`reference_outputs.txt`是上述分析脚本实际输出的冻结摘要，供教师核对。学生须保留自己的本次输出，不得把参考文件当作自己的运行结果。JSON根键为`metadata`、`tablet_assay`、`paired_log_demo`、`adverse_events`、`mcnemar_demo`、`diagnostics`；McNemar来自例题中的明确汇总表，不冒充个体CSV。
+
+Q–Q图以`(秩−0.5)/n`为绘图位置、标准正态分位数为横轴；参考线为样本均数加样本SD乘横轴值。不同软件绘图位置和参考线可能不同，不逐像素比图。先看整体弯曲、两端偏离和孤立点，再结合样本量与数据来源判断；小样本不贴线本身不构成拒绝正态的阈值。`diagnostics.review_status=requires_human_review`表示输出未记录人工结论，不自动判正态或切换检验；学生查看后把判断写进`DECISIONS.md`。
 
 ## 三份数据的范围
 
@@ -63,7 +67,7 @@ A药24/120（20.0%），B药8/120（6.7%）；n=240，理论频数为16、104、
 
 事件优先表为`[[24,96],[8,112]]`，样本OR=3.50，log-Wald 95%CI为1.503～8.151；RD=13.3个百分点，Wald 95%CI为4.9～21.8。CI使用z=1.96以保持示例统一；它们不等同于Fisher条件OR/精确CI。结论限于观察关联，不能解释为已控制混杂或已证明因果。
 
-课程条件链仅限独立2×2：先处理退化表，再按n<40或Tmin<1选Fisher双侧，否则Tmin<5选Yates，其余选Pearson。R×C、配对表和调整分析另判。空行/列边际本实现仅描述；个别零格保留可用检验，但不偷加0.5，不硬给Wald OR区间。本最小实现对零格或Tmin<5不估计RD区间，保留点估计并标明未实现适当稀疏区间算法；零样本组的率写null而非0%。
+课程条件链仅限独立2×2：先处理退化表，再按n<40或Tmin<1选Fisher双侧，否则Tmin<5选Yates，其余选Pearson。R×C、配对表和调整分析另判。空行/列边际本实现仅描述；个别零格保留可用检验，但不偷加0.5，不硬给Wald OR区间。本最小实现对零格或Tmin<5均不估计OR和RD的Wald区间，保留可定义的点估计并标明未实现适当稀疏区间算法；这是本实现的保守范围，不是所有区间方法的通用阈值，也不要求不同算法的P与CI必然一致。零样本组的率写null而非0%。
 
 ## 维护者重新生成数据
 
