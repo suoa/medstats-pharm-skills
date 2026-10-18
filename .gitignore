@@ -17,4 +17,7 @@ __pycache__/
 .Rhistory
 .RData
 .Rproj.user/
-.spv
+*.spv
+
+# 本地分析产物（参考答案在 datasets/teaching/ 单独保留）
+/output/
