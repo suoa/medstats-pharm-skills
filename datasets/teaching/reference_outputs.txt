@@ -28,3 +28,7 @@ Python=3.12.14; SciPy=1.17.0
   exact_binomial: P=0.0226558447
   chi_square_corrected: chi2=5.041667, df=1, P=0.0247446720
   chi_square_uncorrected: chi2=6.000000, df=1, P=0.0143058784
+
+【图形诊断】diagnostics.png；逐点数据见diagnostic_points.csv。
+  两独立组分别作图；配对分析只画ln(T)-ln(R)差值。review_status=requires_human_review。
+  图形接近直线不证明正态；仍须结合样本量、异常值及设计判断，不能由图形证明独立性。
