@@ -6,26 +6,38 @@
 
 ## 一条规则先记住
 
-**对话是可丢弃的上下文。** 数据、代码、统计输出、表、图、方法决策都必须落成文件；报告正文里的每个统计数字必须能在输出文件中找到，禁止手打。
+**对话是可丢弃的上下文。** 数据、代码、统计输出与方法决策要留成文件；报告数字须能定位到本次真实输出。脚本路线自动生成结果；SPSS 菜单路线允许准确转录，并标注输出文件、表名及行列。课堂手算可另附过程，不能用参考答案冒充软件运行。
 
-## v0.1 包含什么
+## 当前包含什么（v0.2 限定教学试用候选）
 
 | 模块 | 内容 |
 |---|---|
-| `skills/reporting/method-selection-router` | 方法选择总路由：五步（研究目的→资料类型→设计类型→组数→前提）定方法 |
-| `skills/methods-core/t-test` | 单样本/配对/两独立样本 t 检验，含 SPSS/R/Python 三轨与生物等效性对数尺度例题 |
+| `skills/reporting/method-selection-router` | 先明确问题与独立/相关结构，再形成候选方法、检查相应条件并记录决策 |
+| `skills/methods-core/t-test` | 单样本/配对/两独立样本 t 检验，含 SPSS/R/Python 三轨与配对对数数据的等效界值演示 |
 | `skills/methods-core/chi-square` | 四格表/R×C/McNemar，适用条件链、OR 与报告模板 |
-| `datasets/teaching/` | 3 个药学场景模拟数据集（含量测定、BE 交叉试验、不良反应），固定随机种子可复跑 |
+| `datasets/teaching/` | 3 个药学场景模拟数据集（含量测定、配对 Cmax、不良反应），固定随机种子可复跑；不支持正式 BE 评价 |
 | `templates/student-project/` | 学生分析项目目录模板（data/raw、output、DECISIONS.md、LOG.md） |
 
-后续规划见仓库根目录《医学统计Skills_设计方案》。
+版本范围见 [COLLECTION.md](COLLECTION.md)，历史设计见 [设计方案](docs/设计方案_v0.1.md)，变更见 [CHANGELOG.md](CHANGELOG.md)。规划中的目录不代表已经发布可执行技能。
 
 ## 快速开始
 
-1. 下载本仓库（GitHub / Gitee 镜像，见 [install/](install/)）；
-2. 把需要的 skill 文件夹复制到你的 agent 的技能/规则目录，或直接把 `SKILL.md` 内容提供给 agent；
-3. 分析任何数据，第一句话都走 `method-selection-router`；
-4. 按学生项目模板建目录，把数据放进 `data/raw/`。
+1. 从 GitHub 下载本仓库（Gitee 镜像筹备中，见 [install/](install/)）；
+2. 按平台说明复制完整 skill 文件夹，保留 `references/`；教学数据与根目录 `scripts/` 需另行保留。仅粘贴 Markdown 不会赋予 agent 运行代码或保存文件的能力；
+3. 按 [学生项目模板](templates/student-project/) 建目录。把题目、数据路径、是否同一对象多次测量及教师的软件要求交给 router，已提供的信息不用重复填写；
+4. 每份作业选一条软件路线即可。主要规则和比较方向在查看检验结果前写明，再运行和保存结果。
+
+仓库自带数据可先走 Python 示例闭环（在仓库根目录运行，不会重新生成或改写 CSV）：
+
+```bash
+python -m pip install -r requirements-teaching.txt
+python scripts/analyze_teaching.py --output-dir output/teaching
+python -m unittest discover -s tests -v
+```
+
+参考答案用于核对；学生报告必须引用自己的本次输出。数据生成命令仅供维护者重建合成数据，与分析命令分开。
+
+第一份课堂任务可用 [两药不良事件限定试用作业](docs/teaching-pilot.md)。教师先在本课机位走通所选软件路线，再收集学生实际卡点。
 
 ## 浏览全部 skill
 
@@ -35,9 +47,9 @@
 |---|---|---|
 | data-types-and-summary | 规划中 | 计量/计数/等级资料识别与统计描述 |
 | statistical-tables-graphs | 规划中 | 三线表与统计图选择 |
-| [t-test](skills/methods-core/t-test) | ✅ v0.1 | 单样本/配对/独立样本 t 检验 |
+| [t-test](skills/methods-core/t-test) | 已有，v0.2 修订 | 单样本/配对/独立样本 t 检验 |
 | anova | 规划中 | 完全随机、随机区组设计方差分析与多重比较 |
-| [chi-square](skills/methods-core/chi-square) | ✅ v0.1 | 四格表、R×C、McNemar |
+| [chi-square](skills/methods-core/chi-square) | 已有，v0.2 修订 | 四格表、R×C、McNemar |
 | nonparametric | 规划中 | 符号秩、Mann–Whitney U、Kruskal–Wallis |
 | correlation-regression | 规划中 | 直线相关与回归 |
 | logistic-regression | 规划中 | 二分类结局、调整 OR |
@@ -48,7 +60,7 @@
 
 | Skill | 状态 | 说明 |
 |---|---|---|
-| bioequivalence | 规划中 | 双单侧检验、90%CI、80–125% 界值 |
+| bioequivalence | 规划中 | 按适用规范进行设计与参数分析；常规界值有适用范围 |
 | pharmacokinetics-stats | 规划中 | AUC/Cmax/Tmax 统计处理 |
 | assay-validation | 规划中 | 线性、精密度、回收率、耐用性 |
 | adverse-event-analysis | 规划中 | 不良事件数据与 ROR 信号入门 |
@@ -61,7 +73,7 @@
 | openfda-data | 规划中 | openFDA API 取数约定（免 key） |
 | clinicaltrials-data | 规划中 | ClinicalTrials.gov API v2 |
 | python-stats-recipes | 规划中 | scipy/statsmodels 执行模板集 |
-| [method-selection-router](skills/reporting/method-selection-router) | ✅ v0.1 | 方法选择总路由 |
+| [method-selection-router](skills/reporting/method-selection-router) | 已有，v0.2 修订 | 方法选择总路由 |
 | stats-report-writing | 规划中 | 实验报告结构与结果段写法 |
 | result-interpretation | 规划中 | P 值、CI、效应量与常见误读 |
 
@@ -71,16 +83,16 @@ SPSS 菜单对照、考试自查题、错题模式等，按需安装。
 
 ## 验证闸门（每个分析都要过）
 
-1. 先定资料类型（计量/计数/等级），再谈方法；
-2. 参数检验前必须验正态性与方差齐性，不达标转非参数并在 DECISIONS.md 写理由；
-3. 卡方先过条件链：n≥40？理论频数 ≥5？不满足转校正/Fisher；
-4. 两组比较先判定配对还是独立（以数据结构为证）；
-5. 只报 P 值不合格——必须同时给效应量与 95% CI；
+1. 先明确研究问题、结局及实验/抽样单位，区分独立、配对、重复、整群等结构；设计不能只凭列名推断；
+2. 按候选方法检查前提。配对 t 看差值；单样本与配对 t 不要求两组方差齐。Shapiro–Wilk 的 P>0.05 不证明正态；不按一次前提检验机械换法；
+3. 独立二分类表先查编码、频数及零边际，再按预定课程规则选 Pearson/Yates/Fisher；R×C 与 McNemar 分开判断；
+4. 在看结果前固定主要策略、软件参数与比较方向，不按较小 P 值挑方法；
+5. 不论 P 值大小，报告预定效应及适当的 CI，注明算法与置信水平（通常 95%，等效界值演示为 90%）；区间无法估计时写明原因；
 6. P<0.05 ≠ 有专业意义；P≥0.05 ≠ 无差别；
 7. 多重比较必须说明校正方法；
-8. 正文每个统计数字必须能在输出文件中找到；
-9. 统计表一律三线表，统计图注明 n 与误差线含义（SD/SEM）；
-10. 每次分析更新 LOG.md 与 DECISIONS.md。
+8. 正文数字定位到本次输出；精确检验不强填 χ² 和自由度；
+9. 报告表按课程要求采用三线表；图注明 n 与误差线含义（SD/SE/CI）；
+10. DECISIONS.md 与 LOG.md 复用同一任务信息，分别记实读取、运行、保存与核验状态；不能运行或保存时如实说明。
 
 ## 教学数据合规
 
@@ -88,15 +100,17 @@ SPSS 菜单对照、考试自查题、错题模式等，按需安装。
 
 ## 软件环境
 
-- SPSS（课堂主机位，三轨之一）；
-- R 4.x（自带 `chisq.test`、`t.test`、`mcnemar.test`）；
-- Python 3.10+：numpy、pandas、scipy、statsmodels（`pip install numpy pandas scipy statsmodels`）。
+- Python：依赖及测试基线见 [requirements-teaching.txt](requirements-teaching.txt)，实际运行记录见 [验证记录](docs/validation.md)；其他版本需重新运行测试；
+- R 4.x：保留操作代码，使用 `car::leveneTest` 的片段需安装 `car`；本轮未在 R 环境实跑；
+- SPSS 25 以上：保留中文菜单与输出核查指引；本轮未在 SPSS 环境实跑，不能据此宣称所有版本界面和精确检验默认值相同。
+
+当前试用范围是现有三份合成数据与明示的教学规则。配对 Cmax 数据缺少序列、周期与 AUC，不能作正式交叉 BE 结论；含量数据没有批次层次与具体品种质量标准，不能据此判定真实工艺优劣或药典合格。
 
 ## 许可
 
 双协议：
 
-- **代码**（`.py`/`.R`/`.sh` 及文档中的代码片段）：[MIT](LICENSE)；
+- **代码**（`.py`/`.R`/`.sh`/`.sps` 及文档中的代码片段）：[MIT](LICENSE)；
 - **文字与教学内容**（SKILL.md 等 Markdown 文档、数据字典、模板文本）：[CC BY 4.0](LICENSE-CONTENT.md)，可自由转载、改编、翻译、用于教材出版与教学，署名「ASUO」并注明本仓库即可。
 
 贡献内容即表示你同意以同样的双协议发布。
