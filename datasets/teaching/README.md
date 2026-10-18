@@ -4,7 +4,7 @@
 
 ## 先分析现有数据
 
-在仓库根目录运行一条软件路线即可。下面的Python流程已实际运行；R和SPSS须在各自环境另行核验，不能据此视为三轨全部通过。
+在仓库根目录运行一条软件路线即可。下面的Python流程已实际运行；基础R另有WebAssembly数值与模板验收，桌面R和SPSS仍须在所用环境核验，不能据此视为三轨全部通过。
 
 ```bash
 python -m pip install -r requirements-teaching.txt
