@@ -24,6 +24,8 @@ python scripts/analyze_teaching.py --output-dir output/teaching --t-policy cours
 
 SPSS 路线先用菜单的“粘贴”留下 `.sps`，保存 `.spv` 并导出可读输出。允许准确转录数字，标注文件、表名、行列。R 路线保留脚本与输出。Python已实跑，基础R数值和模板另在WebAssembly环境执行；教师采用桌面R/SPSS前仍需在课堂机位走通，见 [验证记录](validation.md)。
 
+教师可先生成[SPSS机房验收包](spss-machine-check.md)，本作业对应其中`03_adverse_events.sps`。包中参考值不能算学生或教师的SPSS实测；填写运行记录并保留本次SPV/PDF后，才记录实际通过的项目。
+
 ## 学生最少提交
 
 - 问题、方法和一句选择理由；初判及修订记录可直接复用到 `DECISIONS.md`。
