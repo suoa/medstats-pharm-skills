@@ -375,7 +375,10 @@ def _flatten(value, prefix=""):
 
 def save_results(result, output_dir):
     output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        output_dir.mkdir(parents=True, exist_ok=False)
+    except FileExistsError as error:
+        raise FileExistsError(f"输出位置已存在：{output_dir}。请选择不存在的新输出目录；上一轮文件保持原样。") from error
     save_diagnostics(result["diagnostics"], output_dir)
     (output_dir / "results.json").write_text(json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
     pd.DataFrame(_flatten(result)).to_csv(output_dir / "summary.csv", index=False, encoding="utf-8-sig")
@@ -392,7 +395,10 @@ def main():
     args = parser.parse_args()
     result = run_analysis(args.data_dir, args.t_policy)
     result["metadata"]["command"] = f"python scripts/analyze_teaching.py --data-dir {args.data_dir} --output-dir {args.output_dir} --t-policy {args.t_policy}"
-    save_results(result, args.output_dir)
+    try:
+        save_results(result, args.output_dir)
+    except FileExistsError as error:
+        parser.exit(2, f"未保存：{error}\n")
     print(f"已保存实际分析结果：{args.output_dir}/results.json、summary.csv、summary.txt、adverse_events_table.csv、diagnostics.png、diagnostic_points.csv；输入CSV未修改。")
 
 
