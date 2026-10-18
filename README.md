@@ -41,6 +41,8 @@ python -m unittest discover -s tests -v
 
 第一份课堂任务可用 [两药不良事件限定试用作业](docs/teaching-pilot.md)。教师先在本课机位走通所选软件路线，再收集学生实际卡点。
 
+SPSS机房可先用[待实机验收包](docs/spss-machine-check.md)：维护者一条命令生成含原始CSV副本、四份语法、64项参考值及空白运行记录的便携ZIP；学生不需Python/R。每轮用新目录，先人工核对输入，再运行分析和保存SPV/PDF。本轮只核对官方语法资料及打包过程，SPSS尚未实际执行。
+
 ## 浏览全部 skill
 
 ### methods-core/ —— 统计方法核心（对应教材章节）
