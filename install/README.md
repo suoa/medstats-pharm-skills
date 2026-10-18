@@ -36,6 +36,8 @@ GitHub源仓库：[suoa/medstats-pharm-skills](https://github.com/suoa/medstats-
 
 Python用户可先建独立环境，在仓库根目录用该环境的`python -m pip install -r requirements-teaching.txt`安装本轮核验的依赖；记录实际Python及包版本。基线为Python3.12，其他环境须重新验收。当前R模板的mean中心Levene用基础`stats`实现，无需`car`；若自己改用`car::leveneTest`，须另装该包并固定中心算法。SPSS和R用户无需为此安装Python。R的WebAssembly实跑不等于桌面安装验收；客户端安装成功、代码实跑、输出保存与数值核验须分别记录，不以阅读文档代替通过。
 
+共用Python分析脚本每轮使用一个尚不存在的`--output-dir`，已有空目录也拒绝写入；重跑改用新目录，并同步结果读取路径。原生R/SPSS各自按已验收的保存步骤操作，这个保护只覆盖共用Python分析命令。
+
 ## 无执行或保存能力时
 
 仅能读文档时给标为“未执行”的指导；能运行不能保存时可展示真实输出，注明“已计算，尚未保存，未完成作业文件验收”。规划中的方法仍可普通答疑，不伪称其仓库流程已加载、实跑或验证。
