@@ -10,7 +10,7 @@ python scripts/analyze_teaching.py --output-dir output/teaching --t-policy cours
 
 该命令采用事先指定的课程Levene(mean)路线，保存`results.json`、`summary.csv`和`summary.txt`。若教师事先指定通用Welch路线，改用`--t-policy welch`并读取对应主结果；不能看P后更换。JSON保留输入、版本、方向与未舍入结果，文本与表格供阅读。执行失败保留错误，不能复制下方参考值生成伪输出；不能保存时如实写“已计算，尚未保存”。
 
-本次有Python数值与文件输出的实跑验收；脚本数值不等于图形前提已经核验，Q-Q图仍须学生/教师实际查看。R/SPSS仍为官方文档与静态核对，未实际运行。三轨可选不等于三轨均已验证。
+本次有Python数值与文件输出的实跑验收；脚本数值不等于图形前提已经核验，Q-Q图仍须学生/教师实际查看。基础R已有WebR/R 4.6.0数值复算及模板执行，桌面R与SPSS尚待实机验证。三轨可选不等于三轨均已验证，实际范围见仓库验证记录。
 
 ---
 
