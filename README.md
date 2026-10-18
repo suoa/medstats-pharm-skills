@@ -103,7 +103,7 @@ SPSS 菜单对照、考试自查题、错题模式等，按需安装。
 ## 软件环境
 
 - Python：依赖及测试基线见 [requirements-teaching.txt](requirements-teaching.txt)，实际运行记录见 [验证记录](docs/validation.md)；其他版本需重新运行测试；
-- R 4.x：保留操作代码，使用 `car::leveneTest` 的片段需安装 `car`；本轮未在 R 环境实跑；
+- R 4.x：基础R数值复算及文档模板已在 WebR 0.6.0 / R 4.6.0（WebAssembly）实跑；99个数值字段与Python在明示容差内一致。当前mean中心Levene使用基础`stats`，无需`car`。桌面R/Rscript及其他包仍待本机验证，见[验证记录](docs/validation.md)；
 - SPSS 25 以上：保留中文菜单与输出核查指引；本轮未在 SPSS 环境实跑，不能据此宣称所有版本界面和精确检验默认值相同。
 
 当前试用范围是现有三份合成数据与明示的教学规则。配对 Cmax 数据缺少序列、周期与 AUC，不能作正式交叉 BE 结论；含量数据没有批次层次与具体品种质量标准，不能据此判定真实工艺优劣或药典合格。
