@@ -53,11 +53,31 @@ statsmodels 0.15.0 另在本地隔离依赖目录通过 `PYTHONPATH` 加载，�
 - 配对 Cmax：先按受试者键对齐，演示 ln(T)−ln(R)、GMR 及 90% CI 与 80%–125% 教学界值；`formal_be_assessment` 保持 `not_assessed`。该文件缺少序列、周期、AUC，不能作正式交叉 BE 判定。
 - McNemar：课堂采用不一致对数 b+c<40 时精确二项；这是一项预定教学规则，不是普遍适用的数学分界。精确与渐近输出分别标示。
 
+## R数值与文档模板：WebAssembly实跑
+
+本轮无原生`Rscript`，另在隔离目录从npm官方包安装WebR 0.6.0，实际启动**R 4.6.0（2026-04-24），平台`wasm32-unknown-emscripten`**。只使用基础R及`stats`，不宣称验收了桌面安装、`car`包或SPSS。
+
+已通过`source("scripts/validate_teaching.R")`后调用`run_validation(c("output/github-diagnostic-verified/summary.csv", "output/R-validation"))`。脚本重新读取三份CSV，独立计算并比较**99个数值字段**，全部在预定容差内；包括均数/SD、Shapiro、Levene(mean)、pooled/Welch的t/df/P/CI、对数配对/GMR/90%CI、事件表/期望数/P/OR/RD区间及McNemar三法。Levene用绝对组内均值离差的一元ANOVA重建，不冒充`car::leveneTest`包实跑。
+
+比较标准为`|R−Python| ≤ 绝对容差 + 相对容差×|Python|`；Shapiro用`1e-8 + 1e-7×|Python|`，其余用`1e-9 + 1e-8×|Python|`。本次最大绝对差约`2.504e-9`，来自Shapiro P值；不要求两种近似实现逐位相同。保留`r_results.csv`、`comparison.csv`及`sessionInfo.txt`。另把临时副本中一个Python P字段改成0.5，复核器如预期报1项失败并保存失败表；未改真实结果或原始输入。该反例确认比较器会拒绝不一致数据。
+
+已提取SKILL及reference中的真实R代码块执行**20个案例**，覆盖普通两轨、n=2/n>5000的Shapiro状态、不可定义Levene、零单样本/零配对差、常数比值舍入、一条件恒定而配对差值可变、正常/稀疏/零格效应，以及精确McNemar与零不一致对子。修正了旧模板的NaN输出、诊断越界中断、Welch依赖Levene及稀疏区间未同步问题。测试使用临时输入副本，核对源CSV字节未变；报告与真实输出另存到`output/R-template-validation/`。
+
+本地有Rscript的维护者可从仓库根目录复现下列命令；**本轮执行的是上述WebR函数入口，未实跑原生Rscript CLI**：
+
+```bash
+python scripts/analyze_teaching.py --output-dir output/teaching --t-policy course
+Rscript scripts/validate_teaching.R output/teaching/summary.csv output/R-validation
+Rscript tests/test_R_templates.R
+```
+
+跨语言复核需先有Python摘要文件，这是维护者验收流程；学生选R轨无需安装Python，可直接运行R模板并保存自己的结果。99项只比较固定教学例的数值，不覆盖全部元数据、图形、客户端触发、正式BE或任意输入；20例也不证明一般鲁棒性。
+
 ## 尚未执行或待核
 
 | 项目 | 状态与要求 |
 |---|---|
-| R 4.x 实跑 | 本轮环境无 Rscript；代码经官方文档核对，仍待 R 环境执行、保存结果并核对 CI/方法标签 |
+| 桌面R/Rscript及外部包 | 基础R已在WebR/R4.6.0完成99字段复算和20个模板案例；原生CLI、其他R版本、car及课堂安装仍待本机验收 |
 | SPSS 25 以上实机 | 本轮无 SPSS；菜单、精确检验入口与实际输出须在课程机位核查，不能宣称跨版本默认值一致 |
 | 国内教材口径 | 任课教师需填写所用人卫版《医学统计学》的具体版次、相关规则和本课取舍；本轮未取得可逐字核验的教材全文，不编页码或声称已完成教材一致性认证 |
 | 真实课堂 | 尚未完成学生试用；自动数值测试、文档静态检查与模型任务试验均不能代替课堂验收 |
@@ -66,6 +86,8 @@ statsmodels 0.15.0 另在本地隔离依赖目录通过 `PYTHONPATH` 加载，�
 ## 依据与适用边界
 
 - [SciPy Levene](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.levene.html)：mean 与 median 是不同中心定义；本仓库显式指定参数，避免软件默认值混用。
+- [R Shapiro](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/shapiro.test.html)限定非缺失n为3～5000；当前模板不适用时记录`not_assessed`，不自动判断正态。[R t.test源码](https://svn.r-project.org/R/trunk/src/library/stats/R/t.test.R)及本次零差值实跑说明需要显式退化保护。
+- [WebR 0.6.0文件系统](https://docs.r-wasm.org/webr/v0.6.0/mounting.html)与[下载说明](https://docs.r-wasm.org/webr/latest/downloading.html)支持Node中的R WebAssembly执行。本次隔离安装仅用于维护者验收，不新增学生的Node/WebR依赖。
 - [SciPy 1.17 OR](https://docs.scipy.org/doc/scipy-1.17.0/reference/generated/scipy.stats.contingency.odds_ratio.html)：样本OR与条件最大似然OR及相应区间须分别命名。本最小脚本未添加稀疏精确区间实现，按明示范围留空。
 - 图形使用[标准正态分布分位数](https://docs.scipy.org/doc/scipy-1.17.0/reference/generated/scipy.stats.norm.html)与[Matplotlib 3.10.8 Figure.savefig](https://matplotlib.org/3.10.8/api/_as_gen/matplotlib.figure.Figure.savefig.html)。绘图位置和参考线在代码及输出明确给出；未把SciPy `probplot`默认Filliben绘图位置冒称为本图算法。
 - [R McNemar](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/mcnemar.test.html) 与 [statsmodels McNemar](https://www.statsmodels.org/stable/generated/statsmodels.stats.contingency_tables.mcnemar.html)：R 的 `mcnemar.test` 为渐近卡方实现；精确分支使用 `binom.test`，Python 显式设置 `exact`。
