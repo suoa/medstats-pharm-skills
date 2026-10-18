@@ -22,7 +22,7 @@ python scripts/analyze_teaching.py --output-dir output/teaching --t-policy cours
 
 该教学命令同时生成三份数据的示范结果；本作业只取 `adverse_events` 部分。其他结果不视为本题新增作业。脚本不重新生成 CSV；教师或学生可按技能示例仅分析本题数据。
 
-SPSS 路线先用菜单的“粘贴”留下 `.sps`，保存 `.spv` 并导出可读输出。允许准确转录数字，标注文件、表名、行列。R 路线保留脚本与输出。本轮只实跑了 Python；教师采用 R/SPSS 前需在课堂机位走通，见 [验证记录](validation.md)。
+SPSS 路线先用菜单的“粘贴”留下 `.sps`，保存 `.spv` 并导出可读输出。允许准确转录数字，标注文件、表名、行列。R 路线保留脚本与输出。Python已实跑，基础R数值和模板另在WebAssembly环境执行；教师采用桌面R/SPSS前仍需在课堂机位走通，见 [验证记录](validation.md)。
 
 ## 学生最少提交
 
