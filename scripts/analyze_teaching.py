@@ -11,6 +11,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import scipy
+import matplotlib
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+from matplotlib.figure import Figure
 from scipy import stats
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -110,7 +113,7 @@ def analyze_independent_t(frame, group="process", value="assay_pct",
     groups, arrays = {}, []
     for code, label in zip(("A", "B"), labels):
         sample = values[usable & (frame[group] == label)].to_numpy()
-        if len(sample) < 2 or sample.var(ddof=1) == 0:
+        if len(sample) < 2 or np.ptp(sample) == 0 or sample.var(ddof=1) == 0:
             raise ValueError("每组至少两例且方差须大于0；退化资料另行讨论")
         arrays.append(sample)
         groups[code] = {"label": label, "n": len(sample), "mean": float(sample.mean()),
@@ -190,14 +193,15 @@ def analyze_contingency(table, row_labels=("A药", "B药"), column_labels=("发�
     numerator, denominator = a * d, b * c
     odds = float(numerator / denominator) if denominator else None
     odds_ci = (np.exp(np.log(odds) + np.array([-1, 1]) * 1.96 * np.sqrt((1 / x.astype(float)).sum())).tolist()
-               if (x > 0).all() else None)
+               if (x > 0).all() and minimum >= 5 else None)
     rd = float(a / row_n[0] - c / row_n[1])
     se_rd = np.sqrt((a / row_n[0]) * (1 - a / row_n[0]) / row_n[0] + (c / row_n[1]) * (1 - c / row_n[1]) / row_n[1])
     rd_ci = (rd + np.array([-1, 1]) * 1.96 * se_rd).tolist() if (x > 0).all() and minimum >= 5 else None
     result["effects"] = {
         "odds_ratio_sample": {"estimate": odds, "estimate_status": "finite" if odds is not None else "infinite",
-                              "ci95": odds_ci, "ci_method": "log_Wald_z_1.96" if odds_ci else "not_estimated_zero_cell",
-                              "continuity_addition": None},
+                              "ci95": odds_ci, "ci_method": "log_Wald_z_1.96" if odds_ci else "not_estimated_sparse_or_zero_cell",
+                              "continuity_addition": None,
+                              "limitation": "本最小实现对零格或Tmin<5不估计OR区间，未实现适当稀疏区间算法；并非要求P与不同算法CI必然一致"},
         "risk_difference": {"estimate": rd, "ci95": rd_ci,
                             "unit": "proportion", "ci_method": "unpooled_Wald_z_1.96" if rd_ci else "not_estimated_sparse_or_boundary",
                             "limitation": "本最小实现对零格或Tmin<5不估计RD区间，未实现适当稀疏区间算法"}}
@@ -241,6 +245,45 @@ def analyze_mcnemar_pairs(left, right, key="subject_id", value_left="positive", 
     return result
 
 
+def diagnostic_sample(name, observation_ids, values, unit):
+    """与分析集一致的正态Q-Q点；中点绘图位置，参考线不构成正态检验。"""
+    values = np.asarray(values, dtype=float)
+    ids = list(observation_ids)
+    if values.ndim != 1 or len(values) < 2 or len(ids) != len(values) or not np.isfinite(values).all():
+        raise ValueError("诊断图需要至少两个有限值及一一对应的标识")
+    order = np.argsort(values, kind="stable")
+    quantiles = stats.norm.ppf((np.arange(1, len(values) + 1) - 0.5) / len(values))
+    reference = values.mean() + values.std(ddof=1) * quantiles
+    return {"name": name, "n": len(values), "unit": unit,
+            "points": [{"rank": i + 1, "observation_id": str(ids[j]), "value": float(values[j]),
+                        "normal_quantile": float(quantiles[i]), "reference_value": float(reference[i])}
+                       for i, j in enumerate(order)]}
+
+
+def save_diagnostics(diagnostics, output_dir):
+    """只画点和明示参考线；不输出正态通过/不通过或自动切换检验。"""
+    samples = diagnostics["samples"]
+    figure = Figure(figsize=(13.2, 4.7), layout="constrained")
+    FigureCanvasAgg(figure)
+    axes = figure.subplots(1, len(samples), squeeze=False)[0]
+    rows = []
+    for axis, sample in zip(axes, samples):
+        points = pd.DataFrame(sample["points"])
+        axis.plot(points.normal_quantile, points.reference_value, color="#b94b36", linewidth=1.4,
+                  label="Mean + SD * normal quantile")
+        axis.scatter(points.normal_quantile, points.value, color="#24628b", s=27, zorder=3)
+        axis.set_title(f"{sample['name']} (n={sample['n']})", fontsize=11)
+        axis.set_xlabel("Standard normal quantile")
+        axis.set_ylabel(sample["unit"])
+        axis.grid(alpha=0.18)
+        axis.legend(fontsize=7, loc="best")
+        rows.extend({"sample": sample["name"], "unit": sample["unit"], **point} for point in sample["points"])
+    figure.suptitle("Normal Q-Q diagnostics: human review required", fontsize=14)
+    figure.supxlabel("Plot positions: (rank - 0.5) / n. Line proximity does not prove normality.", fontsize=10)
+    figure.savefig(output_dir / diagnostics["plot_file"], dpi=150)
+    pd.DataFrame(rows).to_csv(output_dir / diagnostics["points_file"], index=False, encoding="utf-8-sig")
+
+
 def run_analysis(data_dir=ROOT / "datasets/teaching", t_policy="course"):
     data_dir = Path(data_dir)
     paths = {name: data_dir / (name + ".csv") for name in ("tablet_assay", "bioeq_cmax", "adverse_events")}
@@ -255,7 +298,7 @@ def run_analysis(data_dir=ROOT / "datasets/teaching", t_policy="course"):
     result = {
         "metadata": {"generated_at_utc": datetime.now(timezone.utc).isoformat(),
                      "command": "python scripts/analyze_teaching.py --output-dir OUTPUT --t-policy " + t_policy,
-                     "versions": {"python": platform.python_version(), "numpy": np.__version__, "pandas": pd.__version__, "scipy": scipy.__version__},
+                     "versions": {"python": platform.python_version(), "numpy": np.__version__, "pandas": pd.__version__, "scipy": scipy.__version__, "matplotlib": matplotlib.__version__},
                      "inputs": {name: {"path": str(path.resolve()), "sha256": hashlib.sha256(path.read_bytes()).hexdigest(), "rows": len(frames[name])} for name, path in paths.items()},
                      "execution": {"python": "executed", "R": "not_executed", "SPSS": "not_executed"}},
         "tablet_assay": analyze_independent_t(frames["tablet_assay"], policy=t_policy),
@@ -263,6 +306,21 @@ def run_analysis(data_dir=ROOT / "datasets/teaching", t_policy="course"):
         "adverse_events": adverse,
         "mcnemar_demo": analyze_mcnemar([[42, 18], [6, 54]])}
     result["mcnemar_demo"]["source"] = "literal aggregate table in scripts/analyze_teaching.py; matches skills/methods-core/chi-square/references/examples.md; not a subject CSV"
+    samples = []
+    tablet = frames["tablet_assay"]
+    for code, group in result["tablet_assay"]["groups"].items():
+        included = tablet.loc[(tablet.process == group["label"]) & tablet.assay_pct.notna()]
+        samples.append(diagnostic_sample("tablet_" + code, included.tablet_id, included.assay_pct,
+                                         "Assay (% of label claim)"))
+    pairs, _ = align_pairs(be[["subject_id", "cmax_T"]], be[["subject_id", "cmax_R"]],
+                          value_left="cmax_T", value_right="cmax_R")
+    samples.append(diagnostic_sample("paired_log_difference", pairs.subject_id,
+                                     np.log(pairs.left_value) - np.log(pairs.right_value), "ln(T) - ln(R)"))
+    result["diagnostics"] = {"plot_file": "diagnostics.png", "points_file": "diagnostic_points.csv",
+                             "plotting_positions": "(rank - 0.5) / n", "reference_line": "sample_mean + sample_SD * normal_quantile",
+                             "review_status": "requires_human_review", "automated_normality_decision": "not_made",
+                             "limitation": "图形不证明正态或独立性；配对图仅检查完整对的对数差值，不分别检验T/R代替差值检查",
+                             "samples": samples}
     return result
 
 
@@ -297,6 +355,10 @@ def summary_text(result):
     for method, test in mc["tests"].items():
         stat = f"chi2={test['statistic']:.6f}, df=1, " if "statistic" in test else ""
         lines.append(f"  {method}: {stat}P={test['pvalue']:.10f}")
+    if "diagnostics" in result:
+        lines.extend(["", "【图形诊断】diagnostics.png；逐点数据见diagnostic_points.csv。",
+                      "  两独立组分别作图；配对分析只画ln(T)-ln(R)差值。review_status=requires_human_review。",
+                      "  图形接近直线不证明正态；仍须结合样本量、异常值及设计判断，不能由图形证明独立性。"])
     return "\n".join(lines) + "\n"
 
 
@@ -314,6 +376,7 @@ def _flatten(value, prefix=""):
 def save_results(result, output_dir):
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    save_diagnostics(result["diagnostics"], output_dir)
     (output_dir / "results.json").write_text(json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
     pd.DataFrame(_flatten(result)).to_csv(output_dir / "summary.csv", index=False, encoding="utf-8-sig")
     (output_dir / "summary.txt").write_text(summary_text(result), encoding="utf-8")
@@ -330,7 +393,7 @@ def main():
     result = run_analysis(args.data_dir, args.t_policy)
     result["metadata"]["command"] = f"python scripts/analyze_teaching.py --data-dir {args.data_dir} --output-dir {args.output_dir} --t-policy {args.t_policy}"
     save_results(result, args.output_dir)
-    print(f"已保存实际分析结果：{args.output_dir}/results.json、summary.csv、summary.txt、adverse_events_table.csv；输入CSV未修改。")
+    print(f"已保存实际分析结果：{args.output_dir}/results.json、summary.csv、summary.txt、adverse_events_table.csv、diagnostics.png、diagnostic_points.csv；输入CSV未修改。")
 
 
 if __name__ == "__main__":
