@@ -24,7 +24,7 @@
 
 1. 从 GitHub 下载本仓库（Gitee 镜像筹备中，见 [install/](install/)）；
 2. 按平台说明复制完整 skill 文件夹，保留 `references/`；教学数据与根目录 `scripts/` 需另行保留。仅粘贴 Markdown 不会赋予 agent 运行代码或保存文件的能力；
-3. 按 [学生项目模板](templates/student-project/) 建目录。把题目、数据路径、是否同一对象多次测量及教师的软件要求交给 router，已提供的信息不用重复填写；
+3. 按 [学生项目模板](templates/student-project/) 建目录。按课程规定实际使用AI时，把题目、数据路径、是否同一对象多次测量及教师的软件要求交给 router；不用AI时按教材和教师指引核查，已有信息不用重复填写；
 4. 每份作业选一条软件路线即可。主要规则和比较方向在查看检验结果前写明，再运行和保存结果。
 
 仓库自带数据可先走 Python 示例闭环（在仓库根目录运行，不会重新生成或改写 CSV）：
@@ -39,7 +39,7 @@ python -m unittest discover -s tests -v
 
 分析还保存 `diagnostics.png` 与 `diagnostic_points.csv`：分别画两组含量数据和完整对的 `ln(T)−ln(R)` 差值，作图点保留个体标识并与本次分析集一致。打开图形后，在 `DECISIONS.md` 记一句对尾部、弯曲或异常点的判断；JSON 的 `requires_human_review` 不等于已验过前提。图形不能证明独立性，接近直线也不证明正态。
 
-第一份课堂任务可用 [两药不良事件限定试用作业](docs/teaching-pilot.md)。教师先在本课机位走通所选软件路线，再收集学生实际卡点。
+第一份课堂任务可用 [两药不良事件限定试用作业](docs/teaching-pilot.md)。教师先填写本次软件、正课/课后AI范围与教材口径，再在本课机位走通所选路线。题单含不使用AI的等价操作路径及空白试用记录，AI为可选时不因未使用而判缺交；试用后沿用已有输出证据记录卡点，不增加一套学生日志。
 
 SPSS机房可先用[待实机验收包](docs/spss-machine-check.md)：维护者一条命令生成含原始CSV副本、四份语法、64项参考值及空白运行记录的便携ZIP；学生不需Python/R。每轮用新目录，先人工核对输入，再运行分析和保存SPV/PDF。本轮只核对官方语法资料及打包过程，SPSS尚未实际执行。
 
