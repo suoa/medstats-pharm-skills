@@ -131,7 +131,7 @@ if (m == 0) {
 python scripts/analyze_teaching.py --output-dir output/teaching --t-policy course
 ```
 
-查看`output/teaching/adverse_events_table.csv`、`results.json`和`summary.txt`。脚本固定事件优先方向，输出样本OR/log-Wald CI、RD/Wald CI及具名检验；完整调用、配对零值保护和本次复算值见[例题](references/examples.md)。各轨实跑范围以仓库验证记录为准；R的WebAssembly验收不能改写为桌面R与SPSS均通过。
+输出目录必须尚不存在，已有空目录也拒绝；重跑另选`--output-dir`并同步读取路径，保留各轮输出。首次查看`output/teaching/adverse_events_table.csv`、`results.json`和`summary.txt`。脚本固定事件优先方向，输出样本OR/log-Wald CI、RD/Wald CI及具名检验；完整调用、配对零值保护和本次复算值见[例题](references/examples.md)。各轨实跑范围以仓库验证记录为准；R的WebAssembly验收不能改写为桌面R与SPSS均通过。
 
 ## 5. 结果报告模板
 
